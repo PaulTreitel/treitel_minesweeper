@@ -71,6 +71,7 @@ public class Player {
         int minesNeeded = board[r][c] - neighborMines;
     }
     
+    
     public int getMoveR(){
         return move[0];
     }
