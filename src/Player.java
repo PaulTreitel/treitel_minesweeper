@@ -11,7 +11,7 @@ public class Player {
     static int[][] board = new int[ROWS][COLS];
     private boolean isFirst;
     private int[] move;
-    private int[] baseTile = {-1, -1};
+    private int[] baseTile = {-1, -1, 0};
     
     public Player() {
         isFirst = true;
@@ -34,8 +34,14 @@ public class Player {
         }
         findBaseTile();
         if (baseTile[0] != -1) {
-            
+            for (int rmod = -1; rmod < 2 && baseTile[0]+rmod < ROWS && baseTile[0]+rmod >= 0; rmod++)
+                for (int cmod = -1; cmod < 2 && baseTile[1]+cmod < COLS && baseTile[1]+cmod >= 0; cmod++)
+                    if (board[baseTile[0]+rmod][baseTile[1]+cmod] == -2) {
+                        move = new int[] {baseTile[0]+rmod, baseTile[1]+cmod, baseTile[2]};
+                        return;
+                    }
         }
+        chooseRandom(0, 9, 0, 9);
     }
     
     private void chooseRandom(int lowr, int highr, int lowc, int highc) {
@@ -50,25 +56,41 @@ public class Player {
         for (int i = 0; i < ROWS; i++) {
             for (int j = 0; j < COLS; j++) {
                 if (board[i][j] >= 0) {
-                    if (completable(i, j) == 0) {
-                        //ToDo
-                    } else if (completable(i, j) == 1) {
-                        //ToDo
+                    if (completable(i, j) == 1) {
+                        baseTile = new int[] {i, j, 1};
+                        return;
+                    } else if (completable(i, j) == -1) {
+                        baseTile = new int[] {i, j, -1};
+                        return;
                     }
                 }
             }
         }
     }
     
+    /*
+    return:
+    1 = open all unopened neighbors
+    -1 = mark all unopened neighbors as mines
+    0 = do nothing (tile not determinable by this method)
+    */
     private int completable(int r, int c) {
         int neighborMines = 0;
-        for (int i = -1; i < 2; i++) {
-            for (int j = -1; j < 2; j++) {
+        int unknownNeighbors = 0;
+        for (int i = -1; i < 2 && i < ROWS && i >= 0; i++) {
+            for (int j = -1; j < 2 && j < ROWS && j >= 0; j++) {
                 if (board[i][j] == -1)
                     neighborMines++;
+                if (board[i][j] == -2)
+                    unknownNeighbors++;
             }
         }
         int minesNeeded = board[r][c] - neighborMines;
+        if (minesNeeded == 0)
+            return 1;
+        if (minesNeeded == unknownNeighbors)
+            return -1;
+        return 0;
     }
     
     
