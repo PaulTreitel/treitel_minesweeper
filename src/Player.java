@@ -5,15 +5,17 @@ import java.util.Random;
 public class Player {
 
     static Random rand = new Random();
-    static final int ROWS = 10;
-    static final int COLS = 10;
+    static int ROWS = 10;
+    static int COLS = 10;
 
     static int[][] board = new int[ROWS][COLS];
     private boolean isFirst;
     private int[] move;
     private int[] baseTile = {-1, -1, 0};
     
-    public Player() {
+    public Player(int r, int c) {
+        ROWS = r;
+        COLS = c;
         isFirst = true;
         move = new int[3];
     }
@@ -24,6 +26,17 @@ public class Player {
     //  -2 not marked (not known)
     public void planNextMove(int[][] b){
         System.out.println("Thinking...");
+        
+        System.out.println("Printing board!!");
+        for (int rr=0; rr<ROWS; ++rr)
+        {
+            for (int cc=0; cc<COLS; ++cc)
+            {
+                System.out.printf("%3d ", b[rr][cc]);
+            }
+            System.out.println();
+        }
+        
         for (int i = 0; i < 3; i++)
             move[i] = -1;
         board = b;
@@ -34,14 +47,27 @@ public class Player {
         }
         findBaseTile();
         if (baseTile[0] != -1) {
-            for (int rmod = -1; rmod < 2 && baseTile[0]+rmod < ROWS && baseTile[0]+rmod >= 0; rmod++)
-                for (int cmod = -1; cmod < 2 && baseTile[1]+cmod < COLS && baseTile[1]+cmod >= 0; cmod++)
-                    if (board[baseTile[0]+rmod][baseTile[1]+cmod] == -2) {
-                        move = new int[] {baseTile[0]+rmod, baseTile[1]+cmod, baseTile[2]};
-                        return;
-                    }
+            System.out.println("baseTile found: (" + baseTile[0] +", " + baseTile[1] +")");
+            openNeighbor();
+            if (move[0] != -1)
+                return;
         }
-        chooseRandom(0, 9, 0, 9);
+        System.out.println("Randomize!");
+        do {
+            chooseRandom(0, 9, 0, 9);
+        } while (board[move[0]][move[1]] != -2);
+    }
+    
+    private void openNeighbor() {
+        for (int rmod = -1; rmod < 2; rmod++)
+            for (int cmod = -1; cmod < 2; cmod++) {
+                boolean rowBounds = baseTile[0]+rmod < ROWS && baseTile[0]+rmod >= 0;
+                boolean colBounds = baseTile[1]+cmod < COLS && baseTile[1]+cmod >= 0;
+                if (rowBounds && colBounds && board[baseTile[0]+rmod][baseTile[1]+cmod] == -2) {
+                    move = new int[] {baseTile[0]+rmod, baseTile[1]+cmod, baseTile[2]};
+                    return;
+                }
+            }
     }
     
     private void chooseRandom(int lowr, int highr, int lowc, int highc) {
@@ -77,14 +103,19 @@ public class Player {
     private int completable(int r, int c) {
         int neighborMines = 0;
         int unknownNeighbors = 0;
-        for (int i = -1; i < 2 && i < ROWS && i >= 0; i++) {
-            for (int j = -1; j < 2 && j < ROWS && j >= 0; j++) {
-                if (board[i][j] == -1)
-                    neighborMines++;
-                if (board[i][j] == -2)
-                    unknownNeighbors++;
+        for (int i = -1; i < 2; i++) {
+            for (int j = -1; j < 2; j++) {
+                if (r+i < ROWS && r+i >= 0 && c+j < COLS && c+j >= 0) {
+                    if (board[r+i][c+j] == -1)
+                        neighborMines++;
+                    if (board[r+i][c+j] == -2)
+                        unknownNeighbors++;
+                }
             }
         }
+        System.out.println(r +", "+ c +", "+ unknownNeighbors);
+        if (unknownNeighbors == 0)
+            return 0;
         int minesNeeded = board[r][c] - neighborMines;
         if (minesNeeded == 0)
             return 1;
