@@ -219,7 +219,7 @@ public class Display extends JComponent{
        avgButton.setBounds(AVG_RECT);
        class AvgListener implements ActionListener {
            public void actionPerformed(ActionEvent e) {
-               final int NUM_OF_AVGS = 10;
+               final int NUM_OF_AVGS = 1000;
                double sumTurns = 0;
                
                for (int ii=0; ii<NUM_OF_AVGS ; ++ii){

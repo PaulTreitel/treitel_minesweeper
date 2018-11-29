@@ -30,7 +30,7 @@ public class Game {
         hiddenBoard = new int[ROWS][COLS];
         gameBoard = new int[ROWS][COLS];
         
-        p = new Player();
+        p = new Player(ROWS, COLS, MINES);
         numOfTurns = 0;
         
         for (int rr=0; rr<ROWS; ++rr)
@@ -40,8 +40,8 @@ public class Game {
     }
     
     public int getCell(int r, int c){
-        //return gameBoard[r][c];
-        return hiddenBoard[r][c];
+        return gameBoard[r][c];
+        //return hiddenBoard[r][c];
     }
     
     

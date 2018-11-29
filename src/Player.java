@@ -7,15 +7,20 @@ public class Player {
     static Random rand = new Random();
     static int ROWS = 10;
     static int COLS = 10;
-
     static int[][] board = new int[ROWS][COLS];
+    
+    private int mines;
+    private double minechance;
+    private double numchance;
+    private double[][] odds = new double[ROWS][COLS];
     private boolean isFirst;
     private int[] move;
     private int[] baseTile = {-1, -1, 0};
     
-    public Player(int r, int c) {
+    public Player(int r, int c, int m) {
         ROWS = r;
         COLS = c;
+        mines = m;
         isFirst = true;
         move = new int[3];
     }
@@ -24,19 +29,7 @@ public class Player {
     // Any number between 0 and 8 denotes the neighbours.
     //  -1 denotes a Mine.
     //  -2 not marked (not known)
-    public void planNextMove(int[][] b){
-        System.out.println("Thinking...");
-        
-        System.out.println("Printing board!!");
-        for (int rr=0; rr<ROWS; ++rr)
-        {
-            for (int cc=0; cc<COLS; ++cc)
-            {
-                System.out.printf("%3d ", b[rr][cc]);
-            }
-            System.out.println();
-        }
-        
+    public void planNextMove(int[][] b) {
         for (int i = 0; i < 3; i++)
             move[i] = -1;
         board = b;
@@ -47,16 +40,58 @@ public class Player {
         }
         findBaseTile();
         if (baseTile[0] != -1) {
-            System.out.println("baseTile found: (" + baseTile[0] +", " + baseTile[1] +")");
             openNeighbor();
             if (move[0] != -1)
                 return;
         }
-        System.out.println("Randomize!");
+        
+        calculateOdds();
+        
         do {
-            chooseRandom(0, 9, 0, 9);
+            chooseRandom(0, ROWS, 0, COLS);
         } while (board[move[0]][move[1]] != -2);
     }
+    
+    private void calculateOdds() {
+        //boolean mineUnlikely = mineProbability();
+        for (int i = 0; i < ROWS; i++)
+            for (int j = 0; j < COLS; j++) {
+                if (board[i][j] != -2)
+                    odds[i][j] = 0;
+                else if (knownNeighbor(i, j))
+                    odds[i][j] = calculateKnown();
+                else
+                    odds[i][j] = minechance;
+            }
+    }
+    
+    private boolean knownNeighbor(int r, int c) {
+        for (int i = -1; i < 2; i++)
+            for (int j = -1; j < 2; j++) {
+                boolean rowBounds = r+i < ROWS && r+i >= 0;
+                boolean colBounds = c+j < COLS && c+j >= 0;
+                if (rowBounds && colBounds && board[r+i][c+j] != -2)
+                    return true;
+            }
+        return false;
+    }
+    
+    /*
+    private boolean mineProbability() {
+        int minesFound = 0;
+        int revealed = 0;
+        for (int i = 0; i < ROWS; i++)
+            for (int j = 0; j < COLS; j++) {
+                if (board[i][j] == -1)
+                    minesFound++;
+                if (board[i][j] != -2)
+                    revealed++;
+            }
+        minechance = ((double) mines-minesFound)/(ROWS*COLS - revealed);
+        numchance = 1 - minechance;
+        return numchance > minechance;
+    }
+    */
     
     private void openNeighbor() {
         for (int rmod = -1; rmod < 2; rmod++)
@@ -113,7 +148,6 @@ public class Player {
                 }
             }
         }
-        System.out.println(r +", "+ c +", "+ unknownNeighbors);
         if (unknownNeighbors == 0)
             return 0;
         int minesNeeded = board[r][c] - neighborMines;
