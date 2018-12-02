@@ -6,7 +6,7 @@ public class Main {
 
     public static void main(String[] args){
         final int DISPLAY_WIDTH = 600;
-        final int DISPLAY_HEIGHT = 680;
+        final int DISPLAY_HEIGHT = 720;
         
         JFrame frame = new JFrame();
         

@@ -5,14 +5,11 @@ import java.util.Random;
 public class Player {
 
     static Random rand = new Random();
-    static int ROWS = 10;
-    static int COLS = 10;
-    static int[][] board = new int[ROWS][COLS];
-    
-    private int mines;
-    private double minechance;
-    private double numchance;
-    private double[][] odds = new double[ROWS][COLS];
+    private final int ROWS;
+    private final int COLS;
+    private int[][] board;
+    private final int mines;
+    private double[][] odds;
     private boolean isFirst;
     private int[] move;
     private int[] baseTile = {-1, -1, 0};
@@ -20,9 +17,11 @@ public class Player {
     public Player(int r, int c, int m) {
         ROWS = r;
         COLS = c;
+        board = new int[r][c];
         mines = m;
         isFirst = true;
         move = new int[3];
+        odds = new double[r][c];
     }
 
     // On the hidden board:
@@ -45,61 +44,67 @@ public class Player {
                 return;
         }
         
+        odds = new double[ROWS][COLS];
         calculateOdds();
         
+        System.out.println("Randomize!");
         do {
             chooseRandom(0, ROWS, 0, COLS);
         } while (board[move[0]][move[1]] != -2);
     }
     
     private void calculateOdds() {
-        //boolean mineUnlikely = mineProbability();
+        double minechance = getBaseMineChance();
         for (int i = 0; i < ROWS; i++)
             for (int j = 0; j < COLS; j++) {
                 if (board[i][j] != -2)
                     odds[i][j] = 0;
-                else if (knownNeighbor(i, j))
-                    odds[i][j] = calculateKnown();
-                else
-                    odds[i][j] = minechance;
+                else {
+                    double chanceIfKnown = calculateKnown(i, j);
+                    odds[i][j] = chanceIfKnown > minechance ? chanceIfKnown: minechance;
+                }
             }
     }
     
-    private boolean knownNeighbor(int r, int c) {
+    private double getBaseMineChance() {
+        int tilesRemaining = 0;
+        int minesFound = 0;
+        for (int i = 0; i < ROWS; i++)
+            for (int j = 0; j < COLS; j++) {
+                if (board[i][j] == -2)
+                    tilesRemaining++;
+                else if (board[i][j] == -1)
+                    minesFound++;
+            }
+        return ((double) (mines-minesFound)) / tilesRemaining;
+    }
+    
+    private double calculateKnown(int r, int c) {
+        double topchance = 0;
         for (int i = -1; i < 2; i++)
             for (int j = -1; j < 2; j++) {
                 boolean rowBounds = r+i < ROWS && r+i >= 0;
                 boolean colBounds = c+j < COLS && c+j >= 0;
-                if (rowBounds && colBounds && board[r+i][c+j] != -2)
-                    return true;
+                if (rowBounds && colBounds && board[r+i][c+j] != -2 && board[r+i][c+j] != -1) {
+                    double chance = getNeighborChance(r+i, c+j);
+                    topchance = chance > topchance ? chance : topchance;
+                }
             }
-        return false;
+        return topchance;
     }
     
-    /*
-    private boolean mineProbability() {
-        int minesFound = 0;
-        int revealed = 0;
-        for (int i = 0; i < ROWS; i++)
-            for (int j = 0; j < COLS; j++) {
-                if (board[i][j] == -1)
-                    minesFound++;
-                if (board[i][j] != -2)
-                    revealed++;
-            }
-        minechance = ((double) mines-minesFound)/(ROWS*COLS - revealed);
-        numchance = 1 - minechance;
-        return numchance > minechance;
+    private double getNeighborChance(int r, int c) {
+        int minesNeeded = board[r][c] - getNeighbors(r, c, -1);
+        return ((double) minesNeeded) / getNeighbors(r, c, -2);
     }
-    */
     
     private void openNeighbor() {
-        for (int rmod = -1; rmod < 2; rmod++)
-            for (int cmod = -1; cmod < 2; cmod++) {
-                boolean rowBounds = baseTile[0]+rmod < ROWS && baseTile[0]+rmod >= 0;
-                boolean colBounds = baseTile[1]+cmod < COLS && baseTile[1]+cmod >= 0;
-                if (rowBounds && colBounds && board[baseTile[0]+rmod][baseTile[1]+cmod] == -2) {
-                    move = new int[] {baseTile[0]+rmod, baseTile[1]+cmod, baseTile[2]};
+        for (int i = -1; i < 2; i++)
+            for (int j = -1; j < 2; j++) {
+                boolean rowBounds = baseTile[0]+i < ROWS && baseTile[0]+i >= 0;
+                boolean colBounds = baseTile[1]+j < COLS && baseTile[1]+j >= 0;
+                if (rowBounds && colBounds && board[baseTile[0]+i][baseTile[1]+j] == -2) {
+                    move = new int[] {baseTile[0]+i, baseTile[1]+j, baseTile[2]};
                     return;
                 }
             }
@@ -129,25 +134,12 @@ public class Player {
         }
     }
     
-    /*
-    return:
-    1 = open all unopened neighbors
-    -1 = mark all unopened neighbors as mines
-    0 = do nothing (tile not determinable by this method)
-    */
+    /**
+     * @return: 1 - open all neighbors ; -1 - all neighbors are mines ; 0 - continue search
+     */
     private int completable(int r, int c) {
-        int neighborMines = 0;
-        int unknownNeighbors = 0;
-        for (int i = -1; i < 2; i++) {
-            for (int j = -1; j < 2; j++) {
-                if (r+i < ROWS && r+i >= 0 && c+j < COLS && c+j >= 0) {
-                    if (board[r+i][c+j] == -1)
-                        neighborMines++;
-                    if (board[r+i][c+j] == -2)
-                        unknownNeighbors++;
-                }
-            }
-        }
+        int neighborMines = getNeighbors(r, c, -1);
+        int unknownNeighbors = getNeighbors(r, c, -2);
         if (unknownNeighbors == 0)
             return 0;
         int minesNeeded = board[r][c] - neighborMines;
@@ -158,6 +150,18 @@ public class Player {
         return 0;
     }
     
+    private int getNeighbors(int r, int c, int val) {
+        int neighbors = 0;
+        for (int i = -1; i < 2; i++) {
+            for (int j = -1; j < 2; j++) {
+                if (r+i < ROWS && r+i >= 0 && c+j < COLS && c+j >= 0) {
+                    if (board[r+i][c+j] == val)
+                        neighbors++;
+                }
+            }
+        }
+        return neighbors;
+    }
     
     public int getMoveR(){
         return move[0];
@@ -173,11 +177,5 @@ public class Player {
      */
     public int getMoveAction(){
         return move[2];
-    }
-
-
-    
-
-
-    
+    }   
 }

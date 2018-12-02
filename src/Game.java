@@ -41,7 +41,7 @@ public class Game {
         hiddenBoard = new int[ROWS][COLS];
         gameBoard   = new int[ROWS][COLS];
 
-        p = new Player(ROWS, COLS);        
+        p = new Player(ROWS, COLS, MINES);        
         
         // We will populateBoard AFTER the first click
         // gameBoard can be done here
@@ -49,7 +49,7 @@ public class Game {
             for(int jj=0; jj<COLS ; ++jj)
                 gameBoard[ii][jj] = NOT_MARKED;
 
-        System.out.println("gameBoard Initialized");
+        //System.out.println("gameBoard Initialized");
         //printBoard(gameBoard);
 
         
@@ -207,8 +207,8 @@ public class Game {
         }
         */
         
-        System.out.println("hiddenBoard Initialized");
-        printBoard(hiddenBoard);
+        //System.out.println("hiddenBoard Initialized");
+        //printBoard(hiddenBoard);
 
     }
     

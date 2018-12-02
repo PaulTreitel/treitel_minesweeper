@@ -91,9 +91,9 @@ public class Display extends JComponent {
     // and created in the constructor.
     // Let's save trouble for now and just put these based on:
     // (Width, Height) = (600,800)
-    private final static Rectangle RESET_RECT = new Rectangle(50, 550, 50, 40);
-    private final static Rectangle STEP_RECT = new Rectangle(50, 600, 50, 40);
-    private final static Rectangle RUN_RECT = new Rectangle(130, 600, 50, 40);
+    private final static Rectangle RESET_RECT = new Rectangle(50, 550, 75, 40);
+    private final static Rectangle STEP_RECT = new Rectangle(50, 600, 75, 40);
+    private final static Rectangle RUN_RECT = new Rectangle(130, 600, 75, 40);
     private final static Rectangle AVG_RECT = new Rectangle(210, 600, 100, 40);
     private final static Rectangle AVG_LABEL_RECT = new Rectangle(320, 600, 40, 40);
     private final static Rectangle STEPS_RECT = new Rectangle(500, 600, 40, 40);
@@ -115,7 +115,7 @@ public class Display extends JComponent {
 
     private void init() {
         loopMode = false;
-        System.out.println("in init: size = "+ mineLabels.size());
+        //System.out.println("in init: size = "+ mineLabels.size());
         for (int ii=0; ii<mineLabels.size(); ++ii) {
             remove(mineLabels.remove(0));
             validate();
