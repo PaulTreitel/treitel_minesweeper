@@ -48,9 +48,38 @@ public class Player {
         calculateOdds();
         
         System.out.println("Randomize!");
-        do {
-            chooseRandom(0, ROWS, 0, COLS);
-        } while (board[move[0]][move[1]] != -2);
+        getBestOdds();
+    }
+    
+    private void getBestOdds() {
+        int maxx = -1;
+        int maxy = -1;
+        boolean invert = false;
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if ((maxx == -1 && odds[r][c] != 0)) {
+                    maxx = r;
+                    maxy = c;
+                    invert = 1-odds[r][c] > odds[r][c];
+                } else if (odds[r][c] != 0) {
+                    double maxval;
+                    if (invert)
+                        maxval = 1-odds[maxx][maxy];
+                    else
+                        maxval = odds[maxx][maxy];
+                    boolean higher = odds[r][c] > maxval;
+                    boolean invertHigher = (1-odds[r][c]) > maxval;
+                    if (higher || invertHigher) {
+                        maxx = r;
+                        maxy = c;
+                        invert = invertHigher;
+                    }
+                }
+            }
+        }
+        move[0] = maxx;
+        move[1] = maxy;
+        move[2] = invert ? 1 : -1;
     }
     
     private void calculateOdds() {
