@@ -32,7 +32,8 @@ public class Player {
     public void planNextMove(int[][] b) {
         for (int i = 0; i < 3; i++)
             move[i] = -1;
-        System.arraycopy(b, 0, board, 0, ROWS*COLS);
+        for (int i = 0; i < ROWS; i++)
+            System.arraycopy(b[i], 0, board[i], 0, COLS);
         if (isFirst) {
             chooseRandom(0, 9, 0, 9);
             isFirst = !isFirst;
@@ -45,9 +46,12 @@ public class Player {
                 return;
         }
         
+        //System.out.println("Prediction Mode");
         predictDeterministic();
+        if (move[0] != -1)
+            return;
         
-        System.out.println("Randomize!");
+        //System.out.println("Randomize!");
         
         odds = new double[ROWS][COLS];
         calculateOdds(board);
@@ -57,7 +61,7 @@ public class Player {
     private void predictDeterministic() {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
-                if (hasNumNeighbor(r, c)) {
+                if (hasNumNeighbor(r, c) && board[r][c] == -2) {
                     for (int act = -1; act < 3; act +=2) {
                         if (attemptPrediction(r, c, act) == -1) {
                             move[0] = r;
@@ -65,6 +69,9 @@ public class Player {
                             move[2] = act == -1 ? 1 : -1;
                             return;
                         }
+                        for (int i = 0; i < 3; i++)
+                            move[i] = -1;
+                        baseTile = new int[] {-1, -1, 0};
                     }
                 }
             }
@@ -72,24 +79,42 @@ public class Player {
     }
     
     private int attemptPrediction(int r, int c, int act) {
+        //System.out.printf("Attempting with tile (%d, %d) and move %d\n", r, c, act);
         int[][] b = new int[ROWS][COLS];
-        System.arraycopy(board, 0, b, 0, ROWS*COLS);
+        for (int i = 0; i < ROWS; i++)
+            System.arraycopy(board[i], 0, b[i], 0, COLS);
         b[r][c] = (act == -1) ? -1 : 10;
         
         for (int turns = 0; turns < DEPTH; turns++) {
+            for (int i = 0; i < 3; i++)
+                move[i] = -1;
             findBaseTile(b);
             if (baseTile[0] != -1) {
                 openNeighbor(b);
-                if (move[0] != -1)
+                if (move[0] != -1) {
+                    //System.out.printf("Found sub-move (%d, %d) with act %d\n", move[0], move[1], move[2]);
                     b[move[0]][move[1]] = (move[2] == -1) ? -1 : 10;
-                else
+                } else
                     return 0;
             } else
                 return 0;
-            if (!validBoard(b))
+            if (!validBoard(b)) {
+                //System.out.println("Found invalid board!");
+                //printBoard(b);
                 return -1;
+            }
         }
+        //printBoard(b);
         return 0;
+    }
+    
+    private void printBoard(int[][] b) {
+        for (int rr=0; rr<ROWS; ++rr) {
+            for (int cc=0; cc<COLS; ++cc) {
+                System.out.printf("%3d|", b[rr][cc]);
+            }
+            System.out.println();
+        }
     }
     
     private boolean validBoard(int[][] b) {
@@ -105,7 +130,7 @@ public class Player {
             for (int j = -1; j < 2; j++) {
                 boolean rowBounds = r+i < ROWS && r+i >= 0;
                 boolean colBounds = c+j < COLS && c+j >= 0;
-                if (rowBounds && colBounds && board[r][c] != -1 && board[r][c] != -2)
+                if (rowBounds && colBounds && board[r+i][c+j] != -1 && board[r+i][c+j] != -2)
                     return true;
             }
         return false;
@@ -150,7 +175,7 @@ public class Player {
                     odds[i][j] = 0;
                 else {
                     double chanceIfKnown = calculateKnown(b, i, j);
-                    odds[i][j] = chanceIfKnown > minechance ? chanceIfKnown: minechance;
+                    odds[i][j] = chanceIfKnown > 0 ? chanceIfKnown : minechance;
                 }
             }
     }
@@ -229,7 +254,7 @@ public class Player {
      * -2 - invalid board
      */
     private int completable(int[][] b, int r, int c) {
-        if (b[r][c] == 10)
+        if (b[r][c] == 10 || b[r][c] < 0)
             return 0;
         int neighborMines = getNeighbors(b,r, c, -1);
         int unknownNeighbors = getNeighbors(b, r, c, -2);
