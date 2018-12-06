@@ -7,8 +7,8 @@ public class Player {
     static Random rand = new Random();
     private final int ROWS;
     private final int COLS;
-    private final int DEPTH = 3;
-    private int[][] board;
+    private final int DEPTH = 5;
+    private final int[][] board;
     private final int mines;
     private double[][] odds;
     private boolean isFirst;
@@ -35,7 +35,9 @@ public class Player {
         for (int i = 0; i < ROWS; i++)
             System.arraycopy(b[i], 0, board[i], 0, COLS);
         if (isFirst) {
-            chooseRandom(0, 9, 0, 9);
+            move[0] = 5;
+            move[1] = 5;
+            move[2] = 1;
             isFirst = !isFirst;
             return;
         }
@@ -51,11 +53,13 @@ public class Player {
         if (move[0] != -1)
             return;
         
-        //System.out.println("Randomize!");
-        
+        System.out.println("Randomize!");
         odds = new double[ROWS][COLS];
         calculateOdds(board);
         getBestOdds();
+        
+        if (move[0] == -1)
+            printBoard(board);
     }
     
     private void predictDeterministic() {
@@ -162,9 +166,24 @@ public class Player {
                 }
             }
         }
-        move[0] = maxx;
-        move[1] = maxy;
-        move[2] = invert ? 1 : -1;
+        if (move[0] != -1) {
+            move[0] = maxx;
+            move[1] = maxy;
+            move[2] = invert ? 1 : -1;
+            return;
+        }
+        setMoveUnopened();
+    }
+    
+    private void setMoveUnopened() {
+        for (int i = 0; i < ROWS; i++)
+            for (int j = 0; j < COLS; j++)
+                if(board[i][j] == -2) {
+                    move[0] = i;
+                    move[1] = j;
+                    move[2] = getBaseMineChance() == 1 ? -1 : 1;
+                    return;
+                }
     }
     
     private void calculateOdds(int[][] b) {

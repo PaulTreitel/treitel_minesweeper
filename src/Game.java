@@ -69,7 +69,7 @@ public class Game {
         int r = p.getMoveR();
         int c = p.getMoveC();
         int action = p.getMoveAction(); // -1-Mine, +1-Safe
-        System.out.println("" + numOfTurns + "::  Move guessed (" + r + "," + c + ") --> Action = " + action);
+        //System.out.println("" + numOfTurns + "::  Move guessed (" + r + "," + c + ") --> Action = " + action);
 
         if (numOfTurns == 1) {
             populateBoard(r, c);
@@ -165,13 +165,18 @@ public class Game {
         for (int ii=0; ii<ROWS*COLS ; ++ii)
             a[ii] = ii;
         Collections.shuffle(Arrays.asList(a)) ;
-        
-        for (int ii=0; ii<MINES; ++ii){ 
-            int n = a[ii] ;
+        int ii = 0;
+        int m = 0;
+        //for (int ii=0; ii<MINES; ++ii){ 
+        while (m < MINES) {
+            int n = a[ii++];
             if (n==clickedSpot)  continue ;
             int r = n / COLS;
             int c = n % COLS;
+            if (Math.abs(rClicked-r) <= 1 && Math.abs(cClicked-c) <= 1)
+                continue;
             hiddenBoard[r][c] = MINE;
+            m++;
             // Fill in the neighbours-value
             for (int kk=-1; kk<=1; kk++){
                 if (r+kk<0 ||  r+kk>=ROWS ) continue;
