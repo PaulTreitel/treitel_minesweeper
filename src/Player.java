@@ -1,10 +1,6 @@
 
-import java.util.Random;
-
-
 public class Player {
 
-    static Random rand = new Random();
     private final int ROWS;
     private final int COLS;
     private final int DEPTH = 5;
@@ -16,13 +12,11 @@ public class Player {
     private int[] baseTile;
     
     public Player(int r, int c, int m) {
-        this.baseTile = new int[]{-1, -1, 0};
         ROWS = r;
         COLS = c;
         board = new int[r][c];
         mines = m;
         isFirst = true;
-        move = new int[3];
         odds = new double[r][c];
     }
 
@@ -31,13 +25,13 @@ public class Player {
     //  -1 denotes a Mine.
     //  -2 not marked (not known)
     public void planNextMove(int[][] b) {
-        for (int i = 0; i < 3; i++)
-            move[i] = -1;
+        baseTile = new int[] {-1, -1, 0};
+        move = new int[] {-1, -1, 0};
         for (int i = 0; i < ROWS; i++)
             System.arraycopy(b[i], 0, board[i], 0, COLS);
         
         if (isFirst) {
-            move = new int[] {5, 5, 1};
+            move = new int[] {ROWS/2, COLS/2, 1};
             isFirst = !isFirst;
             return;
         }
@@ -50,7 +44,6 @@ public class Player {
         }
         
         predictDeterministic();
-        baseTile = new int[] {-1, -1, 0};
         if (move[0] != -1)
             return;
         
@@ -63,15 +56,12 @@ public class Player {
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 if (hasNumNeighbor(r, c) && board[r][c] == -2) {
-                    for (int act = -1; act < 3; act +=2) {
+                    for (int act: new int[] {-1, 1}) {
                         if (attemptPrediction(r, c, act) == -1) {
-                            move[0] = r;
-                            move[1] = c;
-                            move[2] = act == -1 ? 1 : -1;
+                            move = new int[] {r, c, (act == -1) ? 1 : -1};
                             return;
                         }
-                        for (int i = 0; i < 3; i++)
-                            move[i] = -1;
+                        move = new int[] {-1, -1, 0};
                         baseTile = new int[] {-1, -1, 0};
                     }
                 }
@@ -86,8 +76,7 @@ public class Player {
         b[r][c] = (act == -1) ? -1 : 10;
         
         for (int turns = 0; turns < DEPTH; turns++) {
-            for (int i = 0; i < 3; i++)
-                move[i] = -1;
+            move = new int[] {-1, -1, 0};
             findBaseTile(b);
             if (baseTile[0] != -1) {
                 openNeighbor(b);
@@ -114,7 +103,7 @@ public class Player {
             for (int j = -1; j < 2; j++) {
                 boolean rowBounds = r+i < ROWS && r+i >= 0;
                 boolean colBounds = c+j < COLS && c+j >= 0;
-                if (rowBounds && colBounds && board[r+i][c+j] != -1 && board[r+i][c+j] != -2)
+                if (rowBounds && colBounds && board[r+i][c+j] > -1)
                     return true;
             }
         return false;
@@ -135,12 +124,10 @@ public class Player {
                 }
             }
         }
-        
         if (maxx == -1) {
             setMoveUnopened();
             return;
         }
-        
         for (int r = 0; r < ROWS; r++) {
             for (int c = 0; c < COLS; c++) {
                 if (!invert && odds[r][c] != 0 && (1-odds[r][c]) > odds[maxx][maxy]) {
@@ -153,22 +140,14 @@ public class Player {
                 }
             }
         }
-        if (maxx == -1) {
-            setMoveUnopened();
-            return;
-        }
-        move[0] = maxx;
-        move[1] = maxy;
-        move[2] = invert ? 1 : -1;
+        move = new int[] {maxx, maxy, invert ? 1 : -1};
     }
     
     private void setMoveUnopened() {
         for (int i = 0; i < ROWS; i++)
             for (int j = 0; j < COLS; j++)
                 if(board[i][j] == -2) {
-                    move[0] = i;
-                    move[1] = j;
-                    move[2] = getBaseMineChance() == 1 ? -1 : 1;
+                    move = new int[] {i, j, (getBaseMineChance() == 1) ? -1 : 1};
                     return;
                 }
     }
@@ -177,12 +156,11 @@ public class Player {
         double minechance = getBaseMineChance();
         for (int i = 0; i < ROWS; i++)
             for (int j = 0; j < COLS; j++) {
-                if (board[i][j] != -2)
-                    odds[i][j] = 0;
-                else {
+                if (board[i][j] == -2) {
                     double chanceIfKnown = calculateKnown(b, i, j);
                     odds[i][j] = chanceIfKnown > 0 ? chanceIfKnown : minechance;
-                }
+                } else
+                    odds[i][j] = 0;
             }
     }
     
@@ -205,7 +183,7 @@ public class Player {
             for (int j = -1; j < 2; j++) {
                 boolean rowBounds = r+i < ROWS && r+i >= 0;
                 boolean colBounds = c+j < COLS && c+j >= 0;
-                if (rowBounds && colBounds && board[r+i][c+j] != -2 && board[r+i][c+j] != -1) {
+                if (rowBounds && colBounds && board[r+i][c+j] > -1) {
                     double chance = getNeighborChance(b, r+i, c+j);
                     topchance = chance > topchance ? chance : topchance;
                 }
@@ -234,11 +212,9 @@ public class Player {
         for (int i = 0; i < ROWS; i++) {
             for (int j = 0; j < COLS; j++) {
                 if (b[i][j] >= 0 && b[i][j] != 10) {
-                    if (completable(b, i, j) == 1) {
-                        baseTile = new int[] {i, j, 1};
-                        return;
-                    } else if (completable(b, i, j) == -1) {
-                        baseTile = new int[] {i, j, -1};
+                    int complete = completable(b, i, j);
+                    if (complete == 1 || complete == -1) {
+                        baseTile = new int[] {i, j, complete};
                         return;
                     }
                 }
@@ -254,14 +230,11 @@ public class Player {
      * -2 - invalid board
      */
     private int completable(int[][] b, int r, int c) {
-        if (b[r][c] == 10 || b[r][c] < 0)
-            return 0;
-        int neighborMines = getNeighbors(b,r, c, -1);
         int unknownNeighbors = getNeighbors(b, r, c, -2);
-        if (unknownNeighbors == 0)
+        int minesNeeded = b[r][c] - getNeighbors(b,r, c, -1);
+        if (unknownNeighbors == 0 || b[r][c] == 10 || b[r][c] < 0)
             return 0;
-        int minesNeeded = b[r][c] - neighborMines;
-        if (minesNeeded == 0)
+        else if (minesNeeded == 0)
             return 1;
         else if (minesNeeded == unknownNeighbors)
             return -1;
