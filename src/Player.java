@@ -13,9 +13,10 @@ public class Player {
     private double[][] odds;
     private boolean isFirst;
     private int[] move;
-    private int[] baseTile = {-1, -1, 0};
+    private int[] baseTile;
     
     public Player(int r, int c, int m) {
+        this.baseTile = new int[]{-1, -1, 0};
         ROWS = r;
         COLS = c;
         board = new int[r][c];
@@ -34,13 +35,13 @@ public class Player {
             move[i] = -1;
         for (int i = 0; i < ROWS; i++)
             System.arraycopy(b[i], 0, board[i], 0, COLS);
+        
         if (isFirst) {
-            move[0] = 5;
-            move[1] = 5;
-            move[2] = 1;
+            move = new int[] {5, 5, 1};
             isFirst = !isFirst;
             return;
         }
+        
         findBaseTile(board);
         if (baseTile[0] != -1) {
             openNeighbor(board);
@@ -48,18 +49,14 @@ public class Player {
                 return;
         }
         
-        //System.out.println("Prediction Mode");
         predictDeterministic();
+        baseTile = new int[] {-1, -1, 0};
         if (move[0] != -1)
             return;
         
-        System.out.println("Randomize!");
         odds = new double[ROWS][COLS];
         calculateOdds(board);
         getBestOdds();
-        
-        if (move[0] == -1)
-            printBoard(board);
     }
     
     private void predictDeterministic() {
@@ -83,7 +80,6 @@ public class Player {
     }
     
     private int attemptPrediction(int r, int c, int act) {
-        //System.out.printf("Attempting with tile (%d, %d) and move %d\n", r, c, act);
         int[][] b = new int[ROWS][COLS];
         for (int i = 0; i < ROWS; i++)
             System.arraycopy(board[i], 0, b[i], 0, COLS);
@@ -95,30 +91,14 @@ public class Player {
             findBaseTile(b);
             if (baseTile[0] != -1) {
                 openNeighbor(b);
-                if (move[0] != -1) {
-                    //System.out.printf("Found sub-move (%d, %d) with act %d\n", move[0], move[1], move[2]);
+                if (move[0] != -1)
                     b[move[0]][move[1]] = (move[2] == -1) ? -1 : 10;
-                } else
-                    return 0;
             } else
                 return 0;
-            if (!validBoard(b)) {
-                //System.out.println("Found invalid board!");
-                //printBoard(b);
+            if (!validBoard(b))
                 return -1;
-            }
         }
-        //printBoard(b);
         return 0;
-    }
-    
-    private void printBoard(int[][] b) {
-        for (int rr=0; rr<ROWS; ++rr) {
-            for (int cc=0; cc<COLS; ++cc) {
-                System.out.printf("%3d|", b[rr][cc]);
-            }
-            System.out.println();
-        }
     }
     
     private boolean validBoard(int[][] b) {
@@ -149,30 +129,37 @@ public class Player {
                 if ((maxx == -1 && odds[r][c] != 0)) {
                     maxx = r;
                     maxy = c;
-                    invert = 1-odds[r][c] > odds[r][c];
-                } else if (odds[r][c] != 0) {
-                    double maxval;
-                    if (invert)
-                        maxval = 1-odds[maxx][maxy];
-                    else
-                        maxval = odds[maxx][maxy];
-                    boolean higher = odds[r][c] > maxval;
-                    boolean invertHigher = (1-odds[r][c]) > maxval;
-                    if (higher || invertHigher) {
-                        maxx = r;
-                        maxy = c;
-                        invert = invertHigher;
-                    }
+                } else if (maxx != -1 && odds[r][c] > odds[maxx][maxy]) {
+                    maxx = r;
+                    maxy = c;
                 }
             }
         }
-        if (move[0] != -1) {
-            move[0] = maxx;
-            move[1] = maxy;
-            move[2] = invert ? 1 : -1;
+        
+        if (maxx == -1) {
+            setMoveUnopened();
             return;
         }
-        setMoveUnopened();
+        
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLS; c++) {
+                if (!invert && odds[r][c] != 0 && (1-odds[r][c]) > odds[maxx][maxy]) {
+                    maxx = r;
+                    maxy = c;
+                    invert = true;
+                } else if (invert && odds[r][c] != 0 && (1-odds[r][c]) > (1-odds[maxx][maxy])) {
+                    maxx = r;
+                    maxy = c;
+                }
+            }
+        }
+        if (maxx == -1) {
+            setMoveUnopened();
+            return;
+        }
+        move[0] = maxx;
+        move[1] = maxy;
+        move[2] = invert ? 1 : -1;
     }
     
     private void setMoveUnopened() {
@@ -241,12 +228,6 @@ public class Player {
                     return;
                 }
             }
-    }
-    
-    private void chooseRandom(int lowr, int highr, int lowc, int highc) {
-        move[0] = (int) ((highr-lowr)*Math.random() + lowr);
-        move[1] = (int) ((highc-lowc)*Math.random() + lowc);
-        move[2] = 1;
     }
     
     private void findBaseTile(int[][] b) {
