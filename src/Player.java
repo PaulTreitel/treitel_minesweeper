@@ -39,8 +39,7 @@ public class Player {
         findBaseTile(board);
         if (baseTile[0] != -1) {
             openNeighbor(board);
-            if (move[0] != -1)
-                return;
+            return;
         }
         
         predictDeterministic();
@@ -101,9 +100,7 @@ public class Player {
     private boolean hasNumNeighbor(int r, int c) {
         for (int i = -1; i < 2; i++)
             for (int j = -1; j < 2; j++) {
-                boolean rowBounds = r+i < ROWS && r+i >= 0;
-                boolean colBounds = c+j < COLS && c+j >= 0;
-                if (rowBounds && colBounds && board[r+i][c+j] > -1)
+                if (inBound(r+i, c+j) && board[r+i][c+j] > -1)
                     return true;
             }
         return false;
@@ -181,9 +178,7 @@ public class Player {
         double topchance = 0;
         for (int i = -1; i < 2; i++)
             for (int j = -1; j < 2; j++) {
-                boolean rowBounds = r+i < ROWS && r+i >= 0;
-                boolean colBounds = c+j < COLS && c+j >= 0;
-                if (rowBounds && colBounds && board[r+i][c+j] > -1) {
+                if (inBound(r+i, c+j) && board[r+i][c+j] > -1) {
                     double chance = getNeighborChance(b, r+i, c+j);
                     topchance = chance > topchance ? chance : topchance;
                 }
@@ -199,9 +194,7 @@ public class Player {
     private void openNeighbor(int[][] b) {
         for (int i = -1; i < 2; i++)
             for (int j = -1; j < 2; j++) {
-                boolean rowBounds = baseTile[0]+i < ROWS && baseTile[0]+i >= 0;
-                boolean colBounds = baseTile[1]+j < COLS && baseTile[1]+j >= 0;
-                if (rowBounds && colBounds && b[baseTile[0]+i][baseTile[1]+j] == -2) {
+                if (inBound(baseTile[0]+i, baseTile[1]+j) && b[baseTile[0]+i][baseTile[1]+j] == -2) {
                     move = new int[] {baseTile[0]+i, baseTile[1]+j, baseTile[2]};
                     return;
                 }
@@ -211,13 +204,11 @@ public class Player {
     private void findBaseTile(int[][] b) {
         for (int i = 0; i < ROWS; i++) {
             for (int j = 0; j < COLS; j++) {
-                if (b[i][j] >= 0 && b[i][j] != 10) {
-                    int complete = completable(b, i, j);
-                    if (complete == 1 || complete == -1) {
-                        baseTile = new int[] {i, j, complete};
-                        return;
+                int complete = completable(b, i, j);
+                if (complete == 1 || complete == -1) {
+                    baseTile = new int[] {i, j, complete};
+                    return;
                     }
-                }
             }
         }
     }
@@ -254,6 +245,12 @@ public class Player {
             }
         }
         return neighbors;
+    }
+    
+    private boolean inBound(int r, int c) {
+        boolean row = r < ROWS && r >= 0;
+        boolean col = c < COLS && c >= 0;
+        return row && col;
     }
     
     public int getMoveR(){
