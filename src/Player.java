@@ -3,7 +3,7 @@ public class Player {
 
     private final int ROWS;
     private final int COLS;
-    private final int DEPTH = 5;
+    private final int DEPTH = 10;
     private final int[][] board;
     private final int mines;
     private double[][] odds;
@@ -175,15 +175,28 @@ public class Player {
     }
     
     private double calculateKnown(int[][] b, int r, int c) {
-        double topchance = 0;
+        double[] sourceChance = new double[8];
+        double[] sourceUnknown = new double[8];
+        int ii = 0;
         for (int i = -1; i < 2; i++)
             for (int j = -1; j < 2; j++) {
                 if (inBound(r+i, c+j) && board[r+i][c+j] > -1) {
-                    double chance = getNeighborChance(b, r+i, c+j);
-                    topchance = chance > topchance ? chance : topchance;
+                    sourceChance[ii] = getNeighborChance(b, r+i, c+j);
+                    sourceUnknown[ii] = 8 - getNeighbors(b, r+i, c+j, -2);
+                    ii++;
                 }
             }
-        return topchance;
+        return weightedAverage(sourceChance, sourceUnknown);
+    }
+    
+    private double weightedAverage(double[] data, double[] weights) {
+        double sum = 0;
+        double total = 0;
+        for (int i = 0; i < data.length; i++) {
+            sum += (data[i]*weights[i]);
+            total += weights[i];
+        }
+        return sum / total;
     }
     
     private double getNeighborChance(int[][] b, int r, int c) {
@@ -223,7 +236,7 @@ public class Player {
     private int completable(int[][] b, int r, int c) {
         int unknownNeighbors = getNeighbors(b, r, c, -2);
         int minesNeeded = b[r][c] - getNeighbors(b,r, c, -1);
-        if (unknownNeighbors == 0 || b[r][c] == 10 || b[r][c] < 0)
+        if ((unknownNeighbors == 0 && minesNeeded == 0) || b[r][c] == 10 || b[r][c] < 0)
             return 0;
         else if (minesNeeded == 0)
             return 1;
