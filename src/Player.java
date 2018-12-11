@@ -175,28 +175,29 @@ public class Player {
     }
     
     private double calculateKnown(int[][] b, int r, int c) {
-        double[] sourceChance = new double[8];
-        double[] sourceUnknown = new double[8];
+        double[] chances = new double[8];
+        int[] weights = new int[8];
         int ii = 0;
         for (int i = -1; i < 2; i++)
             for (int j = -1; j < 2; j++) {
                 if (inBound(r+i, c+j) && board[r+i][c+j] > -1) {
-                    sourceChance[ii] = getNeighborChance(b, r+i, c+j);
-                    sourceUnknown[ii] = 8 - getNeighbors(b, r+i, c+j, -2);
+                    chances[ii] = getNeighborChance(b, r+i, c+j);
+                    weights[ii] = 8 - getNeighbors(b, r+i, c+j, -2);
                     ii++;
                 }
             }
-        return weightedAverage(sourceChance, sourceUnknown);
+        return weightedAverage(chances, weights);
     }
     
-    private double weightedAverage(double[] data, double[] weights) {
+    
+    private double weightedAverage(double[] chances, int[] weights) {
         double sum = 0;
-        double total = 0;
-        for (int i = 0; i < data.length; i++) {
-            sum += (data[i]*weights[i]);
-            total += weights[i];
+        int n = 0;
+        for (int i = 0; i < chances.length; i++) {
+            sum += chances[i]*weights[i];
+            n += weights[i];
         }
-        return sum / total;
+        return sum / n;
     }
     
     private double getNeighborChance(int[][] b, int r, int c) {
